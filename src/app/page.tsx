@@ -39,7 +39,7 @@ const tiles = [
 
 export default function Home() {
   return (
-    <main className="w-screen grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-0 p-0 m-0 overflow-y-auto sm:overflow-hidden sm:min-h-screen sm:h-screen select-none">
+    <main className="w-screen grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-0 p-0 m-0 sm:overflow-hidden sm:min-h-screen sm:h-screen select-none">
       {tiles.map((tile, idx) => (
         <Link
           href={tile.href}
