@@ -39,7 +39,7 @@ const tiles = [
 
 export default function Home() {
   return (
-    <main className="h-screen w-screen grid grid-cols-3 grid-rows-2 gap-0 p-0 m-0 overflow-hidden select-none">
+    <main className="h-screen w-screen grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-0 p-0 m-0 overflow-hidden select-none">
       {tiles.map((tile, idx) => (
         <Link
           href={tile.href}
@@ -56,7 +56,7 @@ export default function Home() {
           />
           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-50 group-active:opacity-40 transition-opacity duration-300" />
           <span
-            className={`absolute bottom-1/2 left-1/2 translate-x-[-50%] translate-y-[50%] text-white text-4xl md:text-5xl lg:text-6xl font-bold opacity-90 group-hover:opacity-100 transition-opacity duration-300 text-center select-none pointer-events-none ${dancingScript.className} drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)]`}
+            className={`absolute bottom-1/2 left-1/2 translate-x-[-50%] translate-y-[50%] text-white text-4xl md:text-5xl lg:text-6xl font-bold opacity-90 group-hover:opacity-100 transition-all duration-300 text-center select-none pointer-events-none ${dancingScript.className} drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)] transform group-hover:scale-110`}
           >
             {tile.title}
           </span>
