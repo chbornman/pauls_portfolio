@@ -26,7 +26,7 @@ const tiles = [
     href: "/tile4",
   },
   {
-    title: "Conejohela Flats",
+    title: "Lake Clark",
     image: "/assets/cover5.jpg",
     href: "/tile5",
   },
@@ -58,8 +58,8 @@ export default function Home() {
           
           {/* Title Container - Styled like tile1 page */}
           <div className="relative w-full max-w-md flex flex-col items-center justify-center z-10 p-4">
-            <div className="backdrop-blur-xl bg-white/10 p-8 rounded-[32px] shadow-2xl border border-white/20 w-full overflow-hidden relative before:absolute before:inset-0 before:rounded-[32px] before:backdrop-blur-md before:bg-transparent before:z-[-1]">
-              <h2 className={`text-white text-3xl md:text-4xl font-bold text-center ${dancingScript.className}`}>
+            <div className="backdrop-blur-xl bg-white/10 p-4 rounded-[32px] shadow-2xl border border-white/20 w-full overflow-hidden relative before:absolute before:inset-0 before:rounded-[32px] before:backdrop-blur-md before:bg-transparent before:z-[-1] transition-transform duration-300 group-hover:scale-110 group-active:scale-100 group-focus:scale-110">
+              <h2 className={`text-white text-4xl md:text-5xl lg:text-6xl font-bold text-center ${dancingScript.className}`}>
                 {tile.title}
               </h2>
             </div>
