@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function Tile6Page() {
   return (
-    <div className="relative w-screen h-screen overflow-hidden">
+    <div className="relative w-screen min-h-screen overflow-x-hidden flex flex-col items-center justify-center px-2 sm:px-8 py-4">
       {/* Background Image */}
       <Image
         src="/assets/nature6.jpg"
@@ -18,7 +18,7 @@ export default function Tile6Page() {
       {/* Back Button */}
       <Link 
         href="/"
-        className="absolute top-6 left-6 z-10 backdrop-blur-lg bg-white/10 p-3 rounded-full shadow-lg border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+        className="absolute top-3 left-3 sm:top-6 sm:left-6 z-10 backdrop-blur-lg bg-white/10 p-2 sm:p-3 rounded-full shadow-lg border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
         aria-label="Back to home"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 16 16">
@@ -26,7 +26,7 @@ export default function Tile6Page() {
         </svg>
       </Link>
       <div className="absolute inset-0 flex items-center justify-center">
-        <h1 className="text-4xl font-extrabold tracking-tight text-center text-white hover:scale-110 transition-transform duration-200 drop-shadow-lg p-8 bg-black/10 rounded-2xl backdrop-blur-xl border border-white/20">
+        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-center text-white hover:scale-110 transition-transform duration-200 drop-shadow-lg p-4 sm:p-8 bg-black/10 rounded-2xl backdrop-blur-xl border border-white/20">
           Placeholder for Tile 6
         </h1>
       </div>
