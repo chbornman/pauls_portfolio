@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import Link from "next/link"; 
+import Link from "next/link";
+import { Howl } from "howler"; // Import Howl
 
-// Lorem Ipsum lyrics
+// Lorem Ipsum lyrics (kept the same)
 const lyrics = [
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
   "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
@@ -91,7 +92,7 @@ const lyrics = [
   "Itaque earum rerum hic tenetur a sapiente delectus.",
   "Ut aut reiciendis voluptatibus maiores alias consequatur.",
   "Aut perferendis doloribus asperiores repellat.",
-  "Et harum quidem rerum facilis est et expedita distinctio."
+  "Et harum quidem rerum facilis est et expedita distinctio.",
 ];
 
 export default function Tile1Page() {
@@ -99,201 +100,140 @@ export default function Tile1Page() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [songVolume, setSongVolume] = useState(0.7);
   const [ambientVolume, setAmbientVolume] = useState(0.3);
-  
-  // Audio refs
-  const songRef = useRef<HTMLAudioElement>(null);
-  const ambientRef = useRef<HTMLAudioElement>(null);
-  
+  const [isAudioReady, setIsAudioReady] = useState(false); // Track if Howler is ready
+
+  // --- Howler Refs ---
+  const songHowlRef = useRef<Howl | null>(null);
+  const ambientHowlRef = useRef<Howl | null>(null);
+
   // Lyrics scrolling refs
   const lyricsContentRef = useRef<HTMLDivElement>(null);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Audio sources
   const songSrc = "/assets/audio/song.mp3";
   const ambientSrc = "/assets/audio/ambient.mp3";
-  
+
   // Animation state
-  const [scrollInterval, setScrollInterval] = useState<NodeJS.Timeout | null>(null);
-  
+  const [scrollInterval, setScrollInterval] =
+    useState<NodeJS.Timeout | null>(null);
+
   // Fixed scroll speed (pixels per second)
   const scrollSpeed = 15;
-  
-  // Handle audio loading and errors
-  useEffect(() => {
-    const songElement = songRef.current;
-    const ambientElement = ambientRef.current;
-    
-    // Set volume levels
-    if (songElement) {
-      songElement.volume = songVolume;
-    }
-    
-    if (ambientElement) {
-      ambientElement.volume = ambientVolume;
-    }
-    
-    // Event listeners for song
-    if (songElement) {
-      const oncanplay = () => {
-        console.log("Song can play");
-      };
-      
-      // Also listen for the loadedmetadata event which might fire earlier
-      const onloadedmetadata = () => {
-        console.log("Song metadata loaded");
-      };
-      
-      const onerror = (e: Event) => {
-        console.error("Error loading song:", e);
-      };
-      
-      songElement.addEventListener('canplay', oncanplay);
-      songElement.addEventListener('loadedmetadata', onloadedmetadata);
-      songElement.addEventListener('error', onerror);
-      
-      return () => {
-        songElement.removeEventListener('canplay', oncanplay);
-        songElement.removeEventListener('loadedmetadata', onloadedmetadata);
-        songElement.removeEventListener('error', onerror);
-      };
-    }
-  }, [songVolume, ambientVolume]);
-  
-  // Update volume when sliders change
-  useEffect(() => {
-    if (songRef.current) {
-      songRef.current.volume = songVolume;
-    }
-    
-    if (ambientRef.current) {
-      ambientRef.current.volume = ambientVolume;
-    }
-  }, [songVolume, ambientVolume]);
-  
-  // Handle lyrics scrolling
-  useEffect(() => {
-    if (isPlaying) {
-      // Start scrolling with fixed speed when playing
-      const interval = setInterval(() => {
-        if (lyricsContentRef.current && lyricsContainerRef.current) {
-          const currentPosition = lyricsContentRef.current.style.transform;
-          const translateY = currentPosition ? 
-            parseInt(currentPosition.replace('translateY(', '').replace('px)', '')) : 0;
-          
-          // Calculate new position
-          const newPosition = translateY - scrollSpeed / 10;
-          
-          // Apply new position
-          lyricsContentRef.current.style.transform = `translateY(${newPosition}px)`;
-          
-          // Reset if we've scrolled all the way through
-          const contentHeight = lyricsContentRef.current.offsetHeight;
-          const containerHeight = lyricsContainerRef.current.offsetHeight;
-          
-          if (Math.abs(newPosition) > contentHeight - containerHeight + 100) {
-            lyricsContentRef.current.style.transform = 'translateY(0)';
-          }
-        }
-      }, 100);
-      
-      setScrollInterval(interval);
-      
-      return () => {
-        clearInterval(interval);
-      };
-    } else {
-      // Stop scrolling when paused
-      if (scrollInterval) {
-        clearInterval(scrollInterval);
-        setScrollInterval(null);
-      }
-    }
-  }, [isPlaying]); // Remove scrollInterval from dependencies
 
-  /*
-  // Original complex scroll speed calculation - commented out for later
+  // --- Initialize Howler ---
+  useEffect(() => {
+    // Create Howl instances
+    songHowlRef.current = new Howl({
+      src: [songSrc],
+      loop: true,
+      volume: songVolume, // Set initial volume
+      preload: true, // Preload audio data
+      onload: () => {
+        console.log("Song loaded");
+        // Check if both are loaded to set ready state
+        if (ambientHowlRef.current?.state() === "loaded") {
+          setIsAudioReady(true);
+        }
+      },
+      onloaderror: (id, err) => {
+        console.error("Error loading song:", err);
+      },
+      onplayerror: (id, err) => {
+        console.error("Error playing song:", err);
+        // Might need to re-trigger play after user interaction if context was suspended
+      },
+    });
+
+    ambientHowlRef.current = new Howl({
+      src: [ambientSrc],
+      loop: true,
+      volume: ambientVolume, // Set initial volume
+      preload: true,
+      onload: () => {
+        console.log("Ambient loaded");
+        // Check if both are loaded to set ready state
+        if (songHowlRef.current?.state() === "loaded") {
+          setIsAudioReady(true);
+        }
+      },
+      onloaderror: (id, err) => {
+        console.error("Error loading ambient:", err);
+      },
+      onplayerror: (id, err) => {
+        console.error("Error playing ambient:", err);
+      },
+    });
+
+    // --- Cleanup function ---
+    // This is important to release audio resources when the component unmounts
+    return () => {
+      songHowlRef.current?.unload();
+      ambientHowlRef.current?.unload();
+      console.log("Howler instances unloaded");
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  // --- Update Howler volume when sliders change ---
+  useEffect(() => {
+    songHowlRef.current?.volume(songVolume);
+  }, [songVolume]);
+
+  useEffect(() => {
+    ambientHowlRef.current?.volume(ambientVolume);
+  }, [ambientVolume]);
+
+  // Handle lyrics scrolling (no changes needed here, depends on isPlaying state)
   useEffect(() => {
     if (isPlaying) {
-      // Calculate scroll speed based on content length and song duration
-      const calculateScrollSpeed = () => {
-        if (lyricsContentRef.current && lyricsContainerRef.current && songRef.current) {
-          const contentHeight = lyricsContentRef.current.offsetHeight;
-          const containerHeight = lyricsContainerRef.current.offsetHeight;
-          const songDuration = songRef.current.duration || 180; // Default to 3 minutes if duration not available
-          
-          // Total distance to scroll
-          const scrollDistance = contentHeight - containerHeight + 100; // Extra padding
-          
-          // Pixels per second to complete in song duration
-          return scrollDistance / songDuration;
-        }
-        return 15; // Default speed
-      };
-      
-      const scrollSpeed = calculateScrollSpeed();
-      
       const interval = setInterval(() => {
         if (lyricsContentRef.current && lyricsContainerRef.current) {
           const currentPosition = lyricsContentRef.current.style.transform;
-          const translateY = currentPosition ? 
-            parseInt(currentPosition.replace('translateY(', '').replace('px)', '')) : 0;
-          
-          // Calculate new position
+          const translateY = currentPosition
+            ? parseInt(
+                currentPosition.replace("translateY(", "").replace("px)", ""),
+              )
+            : 0;
           const newPosition = translateY - scrollSpeed / 10;
-          
-          // Apply new position
           lyricsContentRef.current.style.transform = `translateY(${newPosition}px)`;
-          
-          // Reset if we've scrolled all the way through
+
           const contentHeight = lyricsContentRef.current.offsetHeight;
           const containerHeight = lyricsContainerRef.current.offsetHeight;
-          
           if (Math.abs(newPosition) > contentHeight - containerHeight + 100) {
-            lyricsContentRef.current.style.transform = 'translateY(0)';
+            lyricsContentRef.current.style.transform = "translateY(0)";
           }
         }
       }, 100);
-      
       setScrollInterval(interval);
-      
-      return () => {
-        if (interval) clearInterval(interval);
-      };
+      return () => clearInterval(interval);
     } else {
-      // Stop scrolling when paused
       if (scrollInterval) {
         clearInterval(scrollInterval);
         setScrollInterval(null);
       }
     }
+    // Ensure scrollInterval is not a dependency to avoid potential loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
-  */
 
-  // Handle play/pause
+  // --- Handle play/pause using Howler ---
   const togglePlayback = () => {
+    if (!isAudioReady) {
+      console.warn("Audio not ready yet.");
+      return; // Don't try to play if not loaded
+    }
+
     if (isPlaying) {
-      // Pause both audio elements
-      songRef.current?.pause();
-      ambientRef.current?.pause();
+      // Pause using Howler methods
+      songHowlRef.current?.pause();
+      ambientHowlRef.current?.pause();
       setIsPlaying(false);
     } else {
-      // Play both audio elements
-      const songPromise = songRef.current?.play();
-      const ambientPromise = ambientRef.current?.play();
-      
-      // Handle autoplay restrictions
-      if (songPromise) {
-        songPromise.catch(e => {
-          console.error("Error playing song:", e);
-        });
-      }
-      
-      if (ambientPromise) {
-        ambientPromise.catch(e => {
-          console.error("Error playing ambient:", e);
-        });
-      }
-      
+      // Play using Howler methods
+      // Howler handles the initial user interaction requirement internally
+      songHowlRef.current?.play();
+      ambientHowlRef.current?.play();
       setIsPlaying(true);
     }
   };
@@ -315,8 +255,17 @@ export default function Tile1Page() {
         className="absolute top-3 left-3 sm:top-6 sm:left-6 z-10 backdrop-blur-lg bg-white/10 p-2 sm:p-3 rounded-full shadow-lg border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
         aria-label="Back to home"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 16 16">
-          <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          fill="white"
+          viewBox="0 0 16 16"
+        >
+          <path
+            fillRule="evenodd"
+            d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"
+          />
         </svg>
       </Link>
       {/* Main Content Container */}
@@ -326,30 +275,50 @@ export default function Tile1Page() {
           <h1 className="text-lg sm:text-2xl font-extrabold mb-3 tracking-tight text-center text-white drop-shadow-lg">
             Chickies Rock
           </h1>
-          
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6">
-            {/* Play Button */}
+            {/* Play Button - Disable until audio is ready */}
             <button
               onClick={togglePlayback}
-              className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-all duration-300 backdrop-blur-sm"
-              aria-label={isPlaying ? 'Pause' : 'Play'}
+              disabled={!isAudioReady} // Disable button until loaded
+              className={`w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-full bg-white/20 transition-all duration-300 backdrop-blur-sm ${
+                isAudioReady
+                  ? "hover:bg-white/30 cursor-pointer"
+                  : "opacity-50 cursor-not-allowed" // Style when disabled
+              }`}
+              aria-label={isPlaying ? "Pause" : "Play"}
+              aria-disabled={!isAudioReady}
             >
               {isPlaying ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16">
-                  <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  fill="white"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" />
                 </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16">
-                  <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  fill="white"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />
                 </svg>
               )}
             </button>
-            
+
             {/* Volume Controls Container */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
-              {/* Song Volume Control - Horizontal on mobile, Vertical on desktop */}
-              <div className="flex flex-col items-center w-full sm:w-auto">
-                <label className="block text-white text-xs font-medium mb-1 text-center">Song</label>
+              {/* Song Volume Control */}
+              <div className="relative z-10 flex flex-col items-center w-full sm:w-auto">
+                <label className="block text-white text-xs font-medium mb-1 text-center">
+                  Song
+                </label>
                 {/* Mobile (Horizontal) */}
                 <div className="block sm:hidden w-full">
                   <input
@@ -358,8 +327,11 @@ export default function Tile1Page() {
                     max="1"
                     step="0.01"
                     value={songVolume}
-                    onChange={(e) => setSongVolume(parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      setSongVolume(parseFloat(e.target.value))
+                    }
                     className="w-full h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer"
+                    aria-label="Song volume"
                   />
                 </div>
                 {/* Desktop (Vertical) */}
@@ -370,21 +342,28 @@ export default function Tile1Page() {
                     max="1"
                     step="0.01"
                     value={songVolume}
-                    onChange={(e) => setSongVolume(parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      setSongVolume(parseFloat(e.target.value))
+                    }
                     className="h-full appearance-none bg-white/30 rounded-lg cursor-pointer w-2"
-                    style={{ 
-                      WebkitAppearance: 'slider-vertical',
-                      writingMode: 'vertical-lr',
-                      transform: 'rotate(180deg)'
+                    style={{
+                      WebkitAppearance: "slider-vertical",
+                      writingMode: "vertical-lr",
+                      transform: "rotate(180deg)",
                     }}
+                    aria-label="Song volume"
                   />
                 </div>
-                <span className="text-[10px] text-white/70">{Math.round(songVolume * 100)}%</span>
+                <span className="text-[10px] text-white/70">
+                  {Math.round(songVolume * 100)}%
+                </span>
               </div>
-              
-              {/* Ambient Volume Control - Horizontal on mobile, Vertical on desktop */}
-              <div className="flex flex-col items-center w-full sm:w-auto">
-                <label className="block text-white text-xs font-medium mb-1 text-center">Ambient</label>
+
+              {/* Ambient Volume Control */}
+              <div className="relative z-10 flex flex-col items-center w-full sm:w-auto">
+                <label className="block text-white text-xs font-medium mb-1 text-center">
+                  Ambient
+                </label>
                 {/* Mobile (Horizontal) */}
                 <div className="block sm:hidden w-full">
                   <input
@@ -393,8 +372,11 @@ export default function Tile1Page() {
                     max="1"
                     step="0.01"
                     value={ambientVolume}
-                    onChange={(e) => setAmbientVolume(parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      setAmbientVolume(parseFloat(e.target.value))
+                    }
                     className="w-full h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer"
+                    aria-label="Ambient volume"
                   />
                 </div>
                 {/* Desktop (Vertical) */}
@@ -405,54 +387,62 @@ export default function Tile1Page() {
                     max="1"
                     step="0.01"
                     value={ambientVolume}
-                    onChange={(e) => setAmbientVolume(parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      setAmbientVolume(parseFloat(e.target.value))
+                    }
                     className="h-full appearance-none bg-white/30 rounded-lg cursor-pointer w-2"
-                    style={{ 
-                      WebkitAppearance: 'slider-vertical',
-                      writingMode: 'vertical-lr',
-                      transform: 'rotate(180deg)'
+                    style={{
+                      WebkitAppearance: "slider-vertical",
+                      writingMode: "vertical-lr",
+                      transform: "rotate(180deg)",
                     }}
+                    aria-label="Ambient volume"
                   />
                 </div>
-                <span className="text-[10px] text-white/70">{Math.round(ambientVolume * 100)}%</span>
+                <span className="text-[10px] text-white/70">
+                  {Math.round(ambientVolume * 100)}%
+                </span>
               </div>
             </div>
           </div>
         </div>
-        {/* Lyrics Panel */}
+        {/* Lyrics Panel (No changes needed here) */}
         <div className="w-auto max-w-xs lg:max-w-sm flex flex-col items-center justify-center">
           <div
             className="backdrop-blur-lg bg-white/10 border border-white/20 shadow-2xl rounded-2xl p-3 sm:p-5 w-full lyrics-glassy-container overflow-hidden relative"
             ref={lyricsContainerRef}
-            style={{ height: '16rem', overflow: 'hidden', position: 'relative', display: 'flex' }}
+            style={{
+              height: "16rem",
+              overflow: "hidden",
+              position: "relative",
+              display: "flex",
+            }}
           >
             <div
               className="text-white text-lg sm:text-2xl font-semibold leading-snug drop-shadow-lg lyrics-glassy-text"
               id="lyrics-content"
               ref={lyricsContentRef}
-              style={{ willChange: 'transform' }}
+              style={{ willChange: "transform" }}
             >
-              {lyrics.map((line, idx) => (
-                line === '' ? <br key={idx} /> : (idx === 0 ? line : ' ' + line)
-              ))}
+              {lyrics.map((line, idx) =>
+                line === "" ? (
+                  <br key={idx} />
+                ) : idx === 0 ? (
+                  line
+                ) : (
+                  " " + line
+                ),
+              )}
             </div>
           </div>
         </div>
       </div>
-      {/* Audio Elements */}
-      <audio
-        ref={songRef}
-        src={songSrc}
-        loop
-        preload="auto"
-      />
-      <audio
-        ref={ambientRef}
-        src={ambientSrc}
-        loop
-        preload="auto"
-      />
-      {/* Custom scrollbar styling */}
+
+      {/* --- Remove the HTML Audio Elements --- */}
+      {/* <audio ref={songRef} src={songSrc} loop preload="auto" /> */}
+      {/* <audio ref={ambientRef} src={ambientSrc} loop preload="auto" /> */}
+
+      {/* Custom scrollbar styling (kept the same) */}
       <style jsx global>{`
         .lyrics-glassy-container::-webkit-scrollbar {
           display: none;
@@ -462,7 +452,7 @@ export default function Tile1Page() {
           -ms-overflow-style: none;
         }
         .lyrics-glassy-text {
-          text-shadow: 0 2px 16px rgba(0,0,0,0.6), 0 1px 0 #fff;
+          text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6), 0 1px 0 #fff;
         }
       `}</style>
     </div>
