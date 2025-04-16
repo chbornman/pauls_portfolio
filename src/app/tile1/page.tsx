@@ -327,7 +327,7 @@ export default function Tile1Page() {
             Chickies Rock
           </h1>
           
-          <div className="flex items-center justify-center gap-5 sm:gap-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6">
             {/* Play Button */}
             <button
               onClick={togglePlayback}
@@ -346,11 +346,12 @@ export default function Tile1Page() {
             </button>
             
             {/* Volume Controls Container */}
-            <div className="flex gap-3 sm:gap-4">
-              {/* Song Volume Control - Vertical */}
-              <div className="flex flex-col items-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
+              {/* Song Volume Control - Horizontal on mobile, Vertical on desktop */}
+              <div className="flex flex-col items-center w-full sm:w-auto">
                 <label className="block text-white text-xs font-medium mb-1 text-center">Song</label>
-                <div className="h-16 sm:h-20 flex items-center justify-center relative mb-1">
+                {/* Mobile (Horizontal) */}
+                <div className="block sm:hidden w-full">
                   <input
                     type="range"
                     min="0"
@@ -358,7 +359,19 @@ export default function Tile1Page() {
                     step="0.01"
                     value={songVolume}
                     onChange={(e) => setSongVolume(parseFloat(e.target.value))}
-                    className="h-full appearance-none bg-white/30 rounded-lg cursor-pointer w-1.5 sm:w-2"
+                    className="w-full h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer"
+                  />
+                </div>
+                {/* Desktop (Vertical) */}
+                <div className="hidden sm:flex h-20 items-center justify-center relative mb-1">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={songVolume}
+                    onChange={(e) => setSongVolume(parseFloat(e.target.value))}
+                    className="h-full appearance-none bg-white/30 rounded-lg cursor-pointer w-2"
                     style={{ 
                       WebkitAppearance: 'slider-vertical',
                       writingMode: 'vertical-lr',
@@ -369,10 +382,11 @@ export default function Tile1Page() {
                 <span className="text-[10px] text-white/70">{Math.round(songVolume * 100)}%</span>
               </div>
               
-              {/* Ambient Volume Control - Vertical */}
-              <div className="flex flex-col items-center">
+              {/* Ambient Volume Control - Horizontal on mobile, Vertical on desktop */}
+              <div className="flex flex-col items-center w-full sm:w-auto">
                 <label className="block text-white text-xs font-medium mb-1 text-center">Ambient</label>
-                <div className="h-16 sm:h-20 flex items-center justify-center relative mb-1">
+                {/* Mobile (Horizontal) */}
+                <div className="block sm:hidden w-full">
                   <input
                     type="range"
                     min="0"
@@ -380,7 +394,19 @@ export default function Tile1Page() {
                     step="0.01"
                     value={ambientVolume}
                     onChange={(e) => setAmbientVolume(parseFloat(e.target.value))}
-                    className="h-full appearance-none bg-white/30 rounded-lg cursor-pointer w-1.5 sm:w-2"
+                    className="w-full h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer"
+                  />
+                </div>
+                {/* Desktop (Vertical) */}
+                <div className="hidden sm:flex h-20 items-center justify-center relative mb-1">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={ambientVolume}
+                    onChange={(e) => setAmbientVolume(parseFloat(e.target.value))}
+                    className="h-full appearance-none bg-white/30 rounded-lg cursor-pointer w-2"
                     style={{ 
                       WebkitAppearance: 'slider-vertical',
                       writingMode: 'vertical-lr',

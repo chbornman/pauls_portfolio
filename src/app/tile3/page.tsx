@@ -97,7 +97,7 @@ export default function Tile3Page() {
         </div>
         {/* Audio Section */}
         <div className="w-full backdrop-blur-xl bg-white/10 p-4 sm:p-8 rounded-2xl shadow-2xl border border-white/20">
-          <h2 className="text-white text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">Safe Harbor (Instrumental)</h2>
+          <h2 className="text-white text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">Wrightsville Song</h2>
           <div className="flex justify-center mb-4">
             <button 
               onClick={togglePlayback}
