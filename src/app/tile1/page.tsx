@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link"; 
 
@@ -95,169 +95,206 @@ const lyrics = [
 ];
 
 export default function Tile1Page() {
-  const [songVolume, setSongVolume] = useState(0.5);
-  const [ambientVolume, setAmbientVolume] = useState(0.3);
+  // Audio state
   const [isPlaying, setIsPlaying] = useState(false);
-  const [songDuration, setSongDuration] = useState(0); // in seconds
+  const [songVolume, setSongVolume] = useState(0.7);
+  const [ambientVolume, setAmbientVolume] = useState(0.3);
+  
+  // Audio refs
   const songRef = useRef<HTMLAudioElement>(null);
   const ambientRef = useRef<HTMLAudioElement>(null);
-  const lyricsContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Lyrics scrolling refs
   const lyricsContentRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number | null>(null);
-
-  // Local audio file paths
+  const lyricsContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Audio sources
   const songSrc = "/assets/audio/song.mp3";
   const ambientSrc = "/assets/audio/ambient.mp3";
-
-  // Handle volume changes
+  
+  // Animation state
+  const [scrollInterval, setScrollInterval] = useState<NodeJS.Timeout | null>(null);
+  
+  // Fixed scroll speed (pixels per second)
+  const scrollSpeed = 15;
+  
+  // Handle audio loading and errors
   useEffect(() => {
-    if (songRef.current) {
-      songRef.current.volume = songVolume;
-      console.log('Song volume set to', songVolume);
+    const songElement = songRef.current;
+    const ambientElement = ambientRef.current;
+    
+    // Set volume levels
+    if (songElement) {
+      songElement.volume = songVolume;
     }
-    if (ambientRef.current) {
-      ambientRef.current.volume = ambientVolume;
-      console.log('Ambient volume set to', ambientVolume);
+    
+    if (ambientElement) {
+      ambientElement.volume = ambientVolume;
     }
-  }, [songVolume, ambientVolume]);
-
-  // Setup audio event handlers
-  useEffect(() => {
-    if (songRef.current) {
-      songRef.current.oncanplay = () => {
-        console.log('Song is ready to play.');
-        // Get and store the song duration when it's loaded
-        if (songRef.current && songRef.current.duration && !isNaN(songRef.current.duration)) {
-          setSongDuration(songRef.current.duration);
-          console.log('Song duration:', songRef.current.duration);
-        }
+    
+    // Event listeners for song
+    if (songElement) {
+      const oncanplay = () => {
+        console.log("Song can play");
       };
       
       // Also listen for the loadedmetadata event which might fire earlier
-      songRef.current.onloadedmetadata = () => {
-        if (songRef.current && songRef.current.duration && !isNaN(songRef.current.duration)) {
-          setSongDuration(songRef.current.duration);
-          console.log('Song duration (from metadata):', songRef.current.duration);
-        }
+      const onloadedmetadata = () => {
+        console.log("Song metadata loaded");
       };
       
-      songRef.current.onerror = (e) => {
-        console.error('Song playback error:', e);
+      const onerror = (e: Event) => {
+        console.error("Error loading song:", e);
+      };
+      
+      songElement.addEventListener('canplay', oncanplay);
+      songElement.addEventListener('loadedmetadata', onloadedmetadata);
+      songElement.addEventListener('error', onerror);
+      
+      return () => {
+        songElement.removeEventListener('canplay', oncanplay);
+        songElement.removeEventListener('loadedmetadata', onloadedmetadata);
+        songElement.removeEventListener('error', onerror);
       };
     }
+  }, [songVolume, ambientVolume]);
+  
+  // Update volume when sliders change
+  useEffect(() => {
+    if (songRef.current) {
+      songRef.current.volume = songVolume;
+    }
+    
     if (ambientRef.current) {
-      ambientRef.current.oncanplay = () => {
-        console.log('Ambient is ready to play.');
-      };
-      ambientRef.current.onerror = (e) => {
-        console.error('Ambient playback error:', e);
-      };
+      ambientRef.current.volume = ambientVolume;
     }
-  }, []);
-
-  // Animation frame handler for smooth scrolling
-  const animate = useCallback((time: number) => {
-    if (!lastTimeRef.current) {
-      lastTimeRef.current = time;
-    }
-    
-    // Update last time reference
-    const deltaTime = time - lastTimeRef.current;
-    lastTimeRef.current = time;
-    
-    // Get current song time and duration
-    const currentTime = songRef.current?.currentTime || 0;
-    const duration = songDuration || 60; // Fallback to 60 seconds if duration not available
-    
-    // Calculate progress based on current time / total duration
-    // If audio isn't playing properly, use a time-based fallback
-    let newProgress;
-    if (currentTime > 0 && duration > 0) {
-      // Use audio time when available
-      newProgress = Math.min(currentTime / duration, 1);
-      console.log('Using audio time for scrolling:', currentTime, '/', duration, '=', newProgress);
-    } else {
-      // Fallback to a time-based animation when audio timing isn't available
-      const progressDelta = deltaTime / (60 * 1000); // 60 seconds fallback duration
-      const currentProgress = parseFloat(lyricsContentRef.current?.style.transform?.match(/-?[\d.]+/)?.[0] || '0') / -100;
-      newProgress = Math.min(currentProgress + progressDelta, 1);
-      console.log('Using fallback time for scrolling:', newProgress);
-    }
-    
-    // Apply transform directly
-    if (lyricsContentRef.current) {
-      // Map 0-1 progress to 0-100% transform
-      const translateY = -newProgress * 100;
-      lyricsContentRef.current.style.transform = `translateY(${translateY}%)`;
-    }
-    
-    // Continue animation loop if playing
-    if (isPlaying) {
-      animationRef.current = requestAnimationFrame(animate);
-    }
-  }, [isPlaying, songDuration]);
-
-  // Handle play/pause animation
+  }, [songVolume, ambientVolume]);
+  
+  // Handle lyrics scrolling
   useEffect(() => {
     if (isPlaying) {
-      // Start or resume animation
-      lastTimeRef.current = null;
-      animationRef.current = requestAnimationFrame(animate);
+      // Start scrolling with fixed speed when playing
+      const interval = setInterval(() => {
+        if (lyricsContentRef.current && lyricsContainerRef.current) {
+          const currentPosition = lyricsContentRef.current.style.transform;
+          const translateY = currentPosition ? 
+            parseInt(currentPosition.replace('translateY(', '').replace('px)', '')) : 0;
+          
+          // Calculate new position
+          const newPosition = translateY - scrollSpeed / 10;
+          
+          // Apply new position
+          lyricsContentRef.current.style.transform = `translateY(${newPosition}px)`;
+          
+          // Reset if we've scrolled all the way through
+          const contentHeight = lyricsContentRef.current.offsetHeight;
+          const containerHeight = lyricsContainerRef.current.offsetHeight;
+          
+          if (Math.abs(newPosition) > contentHeight - containerHeight + 100) {
+            lyricsContentRef.current.style.transform = 'translateY(0)';
+          }
+        }
+      }, 100);
+      
+      setScrollInterval(interval);
+      
+      return () => {
+        clearInterval(interval);
+      };
     } else {
-      // Pause animation
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
+      // Stop scrolling when paused
+      if (scrollInterval) {
+        clearInterval(scrollInterval);
+        setScrollInterval(null);
       }
     }
-    
-    // Cleanup on unmount
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isPlaying, animate]);
+  }, [isPlaying]); // Remove scrollInterval from dependencies
 
-  // Reset animation on mount
+  /*
+  // Original complex scroll speed calculation - commented out for later
   useEffect(() => {
-    if (lyricsContentRef.current) {
-      lyricsContentRef.current.style.transform = 'translateY(0%)';
+    if (isPlaying) {
+      // Calculate scroll speed based on content length and song duration
+      const calculateScrollSpeed = () => {
+        if (lyricsContentRef.current && lyricsContainerRef.current && songRef.current) {
+          const contentHeight = lyricsContentRef.current.offsetHeight;
+          const containerHeight = lyricsContainerRef.current.offsetHeight;
+          const songDuration = songRef.current.duration || 180; // Default to 3 minutes if duration not available
+          
+          // Total distance to scroll
+          const scrollDistance = contentHeight - containerHeight + 100; // Extra padding
+          
+          // Pixels per second to complete in song duration
+          return scrollDistance / songDuration;
+        }
+        return 15; // Default speed
+      };
+      
+      const scrollSpeed = calculateScrollSpeed();
+      
+      const interval = setInterval(() => {
+        if (lyricsContentRef.current && lyricsContainerRef.current) {
+          const currentPosition = lyricsContentRef.current.style.transform;
+          const translateY = currentPosition ? 
+            parseInt(currentPosition.replace('translateY(', '').replace('px)', '')) : 0;
+          
+          // Calculate new position
+          const newPosition = translateY - scrollSpeed / 10;
+          
+          // Apply new position
+          lyricsContentRef.current.style.transform = `translateY(${newPosition}px)`;
+          
+          // Reset if we've scrolled all the way through
+          const contentHeight = lyricsContentRef.current.offsetHeight;
+          const containerHeight = lyricsContainerRef.current.offsetHeight;
+          
+          if (Math.abs(newPosition) > contentHeight - containerHeight + 100) {
+            lyricsContentRef.current.style.transform = 'translateY(0)';
+          }
+        }
+      }, 100);
+      
+      setScrollInterval(interval);
+      
+      return () => {
+        if (interval) clearInterval(interval);
+      };
+    } else {
+      // Stop scrolling when paused
+      if (scrollInterval) {
+        clearInterval(scrollInterval);
+        setScrollInterval(null);
+      }
     }
-  }, []);
+  }, [isPlaying]);
+  */
 
   // Handle play/pause
   const togglePlayback = () => {
     if (isPlaying) {
+      // Pause both audio elements
       songRef.current?.pause();
       ambientRef.current?.pause();
       setIsPlaying(false);
-      console.log('Paused both tracks');
     } else {
-      // Try to play both audio tracks
-      try {
-        if (songRef.current) {
-          const songPromise = songRef.current.play();
-          if (songPromise) {
-            songPromise.then(() => console.log('Song started playing'))
-              .catch(e => console.error('Song play error', e));
-          }
-        }
-        
-        if (ambientRef.current) {
-          const ambientPromise = ambientRef.current.play();
-          if (ambientPromise) {
-            ambientPromise.then(() => console.log('Ambient started playing'))
-              .catch(e => console.error('Ambient play error', e));
-          }
-        }
-        
-        setIsPlaying(true);
-      } catch (error) {
-        console.error("Error playing audio:", error);
-        setIsPlaying(false);
+      // Play both audio elements
+      const songPromise = songRef.current?.play();
+      const ambientPromise = ambientRef.current?.play();
+      
+      // Handle autoplay restrictions
+      if (songPromise) {
+        songPromise.catch(e => {
+          console.error("Error playing song:", e);
+        });
       }
+      
+      if (ambientPromise) {
+        ambientPromise.catch(e => {
+          console.error("Error playing ambient:", e);
+        });
+      }
+      
+      setIsPlaying(true);
     }
   };
 
