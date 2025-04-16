@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
+import Link from "next/link";
 
 const galleryImages = [
   "/assets/cover1.jpg",
@@ -39,7 +40,7 @@ export default function Tile2Page() {
     <div className="relative w-screen h-screen overflow-hidden">
       {/* Background Image */}
       <Image
-        src="/assets/chickies_rock.jpg"
+        src="/assets/nature2.jpg"
         alt="Safe Harbor Background"
         fill
         className="object-cover"
@@ -48,6 +49,17 @@ export default function Tile2Page() {
       
       {/* Overlay for better text readability */}
       <div className="absolute inset-0 bg-black/40" />
+      
+      {/* Back Button */}
+      <Link 
+        href="/"
+        className="absolute top-6 left-6 z-10 backdrop-blur-lg bg-white/10 p-3 rounded-full shadow-lg border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+        aria-label="Back to home"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 16 16">
+          <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+        </svg>
+      </Link>
       
       {/* Main Content Container */}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
