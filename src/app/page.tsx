@@ -44,7 +44,7 @@ export default function Home() {
         <Link
           href={tile.href}
           key={tile.title}
-          className="group relative w-full h-full overflow-hidden flex items-end justify-center focus:outline-none"
+          className="group relative w-full h-full overflow-hidden flex items-center justify-center focus:outline-none"
           style={{ aspectRatio: '1/1' }}
         >
           <Image
@@ -55,11 +55,15 @@ export default function Home() {
             priority={idx === 0}
           />
           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-50 group-active:opacity-40 transition-opacity duration-300" />
-          <span
-            className={`absolute bottom-1/2 left-1/2 translate-x-[-50%] translate-y-[50%] text-white text-4xl md:text-5xl lg:text-6xl font-bold opacity-90 group-hover:opacity-100 transition-all duration-300 text-center select-none pointer-events-none ${dancingScript.className} drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)] transform group-hover:scale-110`}
-          >
-            {tile.title}
-          </span>
+          
+          {/* Title Container - Styled like tile1 page */}
+          <div className="relative w-full max-w-md flex flex-col items-center justify-center z-10 p-4">
+            <div className="backdrop-blur-xl bg-white/10 p-8 rounded-[32px] shadow-2xl border border-white/20 w-full overflow-hidden relative before:absolute before:inset-0 before:rounded-[32px] before:backdrop-blur-md before:bg-transparent before:z-[-1]">
+              <h2 className={`text-white text-3xl md:text-4xl font-bold text-center ${dancingScript.className}`}>
+                {tile.title}
+              </h2>
+            </div>
+          </div>
         </Link>
       ))}
     </main>
