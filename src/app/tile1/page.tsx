@@ -41,6 +41,10 @@ const lyrics = [
   "Temporibus autem quibusdam et aut officiis debitis.",
   "",
   "At vero eos et accusamus et iusto odio dignissimos.",
+  "Ducimus qui blanditiis praesentium voluptatum deleniti.",
+  "Atque corrupti quos dolores et quas molestias excepturi.",
+  "Sint occaecati cupiditate non provident, similique sunt in culpa.",
+  "",
   "Itaque earum rerum hic tenetur a sapiente delectus.",
   "Ut aut reiciendis voluptatibus maiores alias consequatur.",
   "Aut perferendis doloribus asperiores repellat.",
@@ -101,6 +105,7 @@ export default function Tile1Page() {
   const [songVolume, setSongVolume] = useState(0.7);
   const [ambientVolume, setAmbientVolume] = useState(0.3);
   const [isAudioReady, setIsAudioReady] = useState(false); // Track if Howler is ready
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   // --- Howler Refs ---
   const songHowlRef = useRef<Howl | null>(null);
@@ -123,65 +128,86 @@ export default function Tile1Page() {
 
   // --- Initialize Howler ---
   useEffect(() => {
-    // Create Howl instances
-    songHowlRef.current = new Howl({
-      src: [songSrc],
-      loop: true,
-      volume: songVolume, // Set initial volume
-      preload: true, // Preload audio data
-      onload: () => {
-        console.log("Song loaded");
-        // Check if both are loaded to set ready state
-        if (ambientHowlRef.current?.state() === "loaded") {
-          setIsAudioReady(true);
-        }
-      },
-      onloaderror: (id, err) => {
-        console.error("Error loading song:", err);
-      },
-      onplayerror: (id, err) => {
-        console.error("Error playing song:", err);
-        // Might need to re-trigger play after user interaction if context was suspended
-      },
-    });
+    try {
+      songHowlRef.current = new Howl({
+        src: [songSrc],
+        loop: true,
+        volume: songVolume,
+        preload: true,
+        onload: () => {
+          console.log("Song loaded");
+          if (ambientHowlRef.current?.state() === "loaded") {
+            setIsAudioReady(true);
+          }
+        },
+        onloaderror: (id, err) => {
+          const msg = `Error loading song: ${err}`;
+          console.error(msg);
+          setAudioError(msg);
+        },
+        onplayerror: (id, err) => {
+          const msg = `Error playing song: ${err}`;
+          console.error(msg);
+          setAudioError(msg);
+        },
+      });
 
-    ambientHowlRef.current = new Howl({
-      src: [ambientSrc],
-      loop: true,
-      volume: ambientVolume, // Set initial volume
-      preload: true,
-      onload: () => {
-        console.log("Ambient loaded");
-        // Check if both are loaded to set ready state
-        if (songHowlRef.current?.state() === "loaded") {
-          setIsAudioReady(true);
-        }
-      },
-      onloaderror: (id, err) => {
-        console.error("Error loading ambient:", err);
-      },
-      onplayerror: (id, err) => {
-        console.error("Error playing ambient:", err);
-      },
-    });
-
-    // --- Cleanup function ---
-    // This is important to release audio resources when the component unmounts
+      ambientHowlRef.current = new Howl({
+        src: [ambientSrc],
+        loop: true,
+        volume: ambientVolume,
+        preload: true,
+        onload: () => {
+          console.log("Ambient loaded");
+          if (songHowlRef.current?.state() === "loaded") {
+            setIsAudioReady(true);
+          }
+        },
+        onloaderror: (id, err) => {
+          const msg = `Error loading ambient: ${err}`;
+          console.error(msg);
+          setAudioError(msg);
+        },
+        onplayerror: (id, err) => {
+          const msg = `Error playing ambient: ${err}`;
+          console.error(msg);
+          setAudioError(msg);
+        },
+      });
+    } catch (e) {
+      const msg = `Howler initialization error: ${e}`;
+      console.error(msg);
+      setAudioError(msg);
+    }
     return () => {
-      songHowlRef.current?.unload();
-      ambientHowlRef.current?.unload();
-      console.log("Howler instances unloaded");
+      try {
+        songHowlRef.current?.unload();
+        ambientHowlRef.current?.unload();
+        console.log("Howler instances unloaded");
+      } catch (e) {
+        console.error(`Error during Howler cleanup: ${e}`);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
   // --- Update Howler volume when sliders change ---
   useEffect(() => {
-    songHowlRef.current?.volume(songVolume);
+    try {
+      songHowlRef.current?.volume(songVolume);
+    } catch (e) {
+      console.error(`Error setting song volume: ${e}`);
+      setAudioError(`Error setting song volume: ${e}`);
+    }
   }, [songVolume]);
 
   useEffect(() => {
-    ambientHowlRef.current?.volume(ambientVolume);
+    try {
+      ambientHowlRef.current?.volume(ambientVolume);
+    } catch (e) {
+      console.error(`Error setting ambient volume: ${e}`);
+      setAudioError(`Error setting ambient volume: ${e}`);
+    }
   }, [ambientVolume]);
 
   // Handle lyrics scrolling (no changes needed here, depends on isPlaying state)
@@ -220,21 +246,25 @@ export default function Tile1Page() {
   // --- Handle play/pause using Howler ---
   const togglePlayback = () => {
     if (!isAudioReady) {
-      console.warn("Audio not ready yet.");
-      return; // Don't try to play if not loaded
+      const msg = "Audio not ready yet.";
+      console.warn(msg);
+      setAudioError(msg);
+      return;
     }
-
-    if (isPlaying) {
-      // Pause using Howler methods
-      songHowlRef.current?.pause();
-      ambientHowlRef.current?.pause();
-      setIsPlaying(false);
-    } else {
-      // Play using Howler methods
-      // Howler handles the initial user interaction requirement internally
-      songHowlRef.current?.play();
-      ambientHowlRef.current?.play();
-      setIsPlaying(true);
+    try {
+      if (isPlaying) {
+        songHowlRef.current?.pause();
+        ambientHowlRef.current?.pause();
+        setIsPlaying(false);
+      } else {
+        songHowlRef.current?.play();
+        ambientHowlRef.current?.play();
+        setIsPlaying(true);
+      }
+    } catch (e) {
+      const msg = `Playback error: ${e}`;
+      console.error(msg);
+      setAudioError(msg);
     }
   };
 
@@ -405,6 +435,12 @@ export default function Tile1Page() {
               </div>
             </div>
           </div>
+          {/* Error display for debugging */}
+          {audioError && (
+            <div className="mt-2 text-sm text-red-500 bg-red-100 rounded p-2 border border-red-300">
+              Audio Error: {audioError}
+            </div>
+          )}
         </div>
         {/* Lyrics Panel (No changes needed here) */}
         <div className="w-auto max-w-xs lg:max-w-sm flex flex-col items-center justify-center">
