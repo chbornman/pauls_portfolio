@@ -126,6 +126,13 @@ export default function Tile1Page() {
   // Fixed scroll speed (pixels per second)
   const scrollSpeed = 15;
 
+  // iOS detection helper
+  function isIOS() {
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.userAgent.includes('Macintosh') && 'ontouchend' in document);
+  }
+
   // --- Initialize Howler ---
   useEffect(() => {
     try {
@@ -439,6 +446,13 @@ export default function Tile1Page() {
           {audioError && (
             <div className="mt-2 text-sm text-red-500 bg-red-100 rounded p-2 border border-red-300">
               Audio Error: {audioError}
+            </div>
+          )}
+          {/* iOS Silent Mode Warning */}
+          {typeof window !== 'undefined' && isIOS() && (
+            <div className="mt-2 text-xs text-yellow-600 bg-yellow-50 border border-yellow-300 rounded p-2 flex items-center gap-2">
+              <span role="img" aria-label="bell">🔔</span>
+              If you don’t hear sound, make sure your iPhone is not in Silent Mode (ringer switch off) and try again.
             </div>
           )}
         </div>
